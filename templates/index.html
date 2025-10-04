@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Court Case Scraper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 960px;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .result-section {
+            display: none;
+        }
+        .loader {
+            display: none;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Indian Court Case Scraper</h1>
+        
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="case-tab" data-bs-toggle="tab" data-bs-target="#case" type="button" role="tab" aria-controls="case" aria-selected="true">Case Search</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="causelist-tab" data-bs-toggle="tab" data-bs-target="#causelist" type="button" role="tab" aria-controls="causelist" aria-selected="false">Cause List</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="myTabContent">
+                    <!-- Case Search Tab -->
+                    <div class="tab-pane fade show active" id="case" role="tabpanel" aria-labelledby="case-tab">
+                        <form id="caseSearchForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="courtType" class="form-label">Court Type</label>
+                                    <select class="form-select" id="courtType" required>
+                                        <option value="">Select Court Type</option>
+                                        <option value="high">High Court</option>
+                                        <option value="district">District Court</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="courtName" class="form-label">Court Name</label>
+                                    <select class="form-select" id="courtName" required>
+                                        <option value="">Select Court Name</option>
+                                        <!-- Options will be populated based on court type selection -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="caseType" class="form-label">Case Type</label>
+                                    <input type="text" class="form-control" id="caseType" placeholder="e.g. CRL.A, CWP" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="caseNumber" class="form-label">Case Number</label>
+                                    <input type="text" class="form-control" id="caseNumber" placeholder="e.g. 123" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="caseYear" class="form-label">Year</label>
+                                    <input type="text" class="form-control" id="caseYear" placeholder="e.g. 2023" required>
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Search Case</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Cause List Tab -->
+                    <div class="tab-pane fade" id="causelist" role="tabpanel" aria-labelledby="causelist-tab">
+                        <form id="causeListForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="clCourtType" class="form-label">Court Type</label>
+                                    <select class="form-select" id="clCourtType" required>
+                                        <option value="">Select Court Type</option>
+                                        <option value="high">High Court</option>
+                                        <option value="district">District Court</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="clCourtName" class="form-label">Court Name</label>
+                                    <select class="form-select" id="clCourtName" required>
+                                        <option value="">Select Court Name</option>
+                                        <!-- Options will be populated based on court type selection -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="clDate" class="form-label">Date</label>
+                                    <input type="date" class="form-control" id="clDate" required>
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Get Cause List</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loader -->
+        <div class="loader" id="loader"></div>
+        
+        <!-- Case Results Section -->
+        <div class="card result-section" id="caseResultSection">
+            <div class="card-header">
+                <h5>Case Details</h5>
+            </div>
+            <div class="card-body">
+                <div id="caseError" class="alert alert-danger" style="display: none;"></div>
+                <div id="caseDetails">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6>Case Information</h6>
+                            <p><strong>Court:</strong> <span id="resultCourt"></span></p>
+                            <p><strong>Case Type:</strong> <span id="resultCaseType"></span></p>
+                            <p><strong>Case Number:</strong> <span id="resultCaseNumber"></span></p>
+                            <p><strong>Year:</strong> <span id="resultYear"></span></p>
+                            <p><strong>Status:</strong> <span id="resultStatus"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Parties</h6>
+                            <p><strong>Petitioner:</strong> <span id="resultPetitioner"></span></p>
+                            <p><strong>Respondent:</strong> <span id="resultRespondent"></span></p>
+                            <p><strong>Filing Date:</strong> <span id="resultFilingDate"></span></p>
+                            <p><strong>Next Hearing:</strong> <span id="resultNextHearing"></span></p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Documents</h6>
+                            <div id="documentsContainer" class="list-group">
+                                <!-- Documents will be listed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cause List Results Section -->
+        <div class="card result-section" id="causeListResultSection">
+            <div class="card-header">
+                <h5>Cause List</h5>
+            </div>
+            <div class="card-body">
+                <div id="causeListError" class="alert alert-danger" style="display: none;"></div>
+                <div id="causeListDetails">
+                    <div class="mb-3">
+                        <p><strong>Court:</strong> <span id="clResultCourt"></span></p>
+                        <p><strong>Date:</strong> <span id="clResultDate"></span></p>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Case Type</th>
+                                    <th>Case No.</th>
+                                    <th>Year</th>
+                                    <th>Parties</th>
+                                    <th>Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody id="causeListTable">
+                                <!-- Cause list entries will be added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
